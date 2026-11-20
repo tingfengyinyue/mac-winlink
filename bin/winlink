@@ -1,0 +1,164 @@
+#!/bin/bash
+# macOS ships Bash 3.2; do not require Homebrew, Python, or Node on clients.
+set -euo pipefail
+umask 077
+config_dir=${WINLINK_HOME:-"$HOME/.config/winlink"}
+ssh_config=${WINLINK_SSH_CONFIG:-"$HOME/.ssh/config"}
+fail() { printf 'winlink: %s\n' "$*" >&2; exit 2; }
+usage() {
+    cat <<'EOF'
+winlink — macOS → Windows over OpenSSH
+  keygen                         Generate this Mac's own SSH key (interactive)
+  pubkey                         Print the public key to authorize on Windows
+  add NAME --host IP --user USER [--port 22] [--workdir 'C:\work']
+  list                           List configured Windows computers
+  shell NAME                     Open an interactive Windows shell
+  exec NAME -- 'POWERSHELL'       Run PowerShell; return its exit status
+  script NAME FILE.ps1           Run a small local UTF-8 PowerShell script
+  doctor NAME                    Verify login and print remote environment
+  code NAME [C:/work/project]     Open a Windows folder with VS Code Remote-SSH
+  remove NAME                    Remove local target (does not revoke its key)
+EOF
+}
+validate_path() {
+    case "$1" in /*) ;; *) fail 'Configuration paths must be absolute.' ;; esac
+    case "$1" in *'"'*|*'\'*|*'%'*|*'*'*|*'?'*|*'['*|*$'\n'*|*$'\r'*)
+        fail 'Configuration path contains an unsupported SSH configuration character.' ;; esac
+}
+validate_alias() { [[ "$1" =~ ^[a-zA-Z0-9][a-zA-Z0-9_-]*$ ]] || fail 'Use letters, numbers, _ and - for NAME.'; }
+quote_ssh() { local value=${1//\\/\\\\}; printf '"%s"' "${value//\"/\\\"}"; }
+ensure_dirs() {
+    mkdir -p "$config_dir/hosts" "$config_dir/workdirs"
+    chmod 700 "$config_dir" "$config_dir/hosts" "$config_dir/workdirs"
+}
+include_config() {
+    local include tmp backup
+    include="Include \"$config_dir/hosts/*\""
+    mkdir -p "$(dirname "$ssh_config")"
+    # Prepend so an existing Host/Match block cannot capture the Include.
+    if [ -f "$ssh_config" ] && /usr/bin/grep -Fqx "$include" "$ssh_config"; then return; fi
+    tmp=$(mktemp "${ssh_config}.winlink.XXXXXX")
+    printf '%s\nHost *\n' "$include" > "$tmp"
+    if [ -e "$ssh_config" ]; then
+        backup=$(mktemp "${ssh_config}.before-winlink.XXXXXX")
+        cp -p "$ssh_config" "$backup"
+        cat "$ssh_config" >> "$tmp"
+        printf 'SSH config backup: %s\n' "$backup" >&2
+    fi
+    # Write through an existing symlink rather than replacing that symlink.
+    cat "$tmp" > "$ssh_config"
+    rm -f "$tmp"
+    chmod 600 "$ssh_config"
+}
+require_target() {
+    validate_alias "$1"
+    [ -f "$config_dir/hosts/$1" ] || fail "Unknown target: $1. Run winlink add first."
+}
+run_ps() {
+    local name=$1 script=$2 workdir='' quoted='' payload encoded remote
+    require_target "$name"
+    [ ! -f "$config_dir/workdirs/$name" ] || workdir=$(cat "$config_dir/workdirs/$name")
+    if [ -n "$workdir" ]; then
+        quoted=${workdir//\'/\'\'}
+        script="Set-Location -LiteralPath '$quoted'"$'\n'"$script"
+    fi
+    payload=$(printf '%s\n' '$ErrorActionPreference = "Stop"' \
+        '[Console]::OutputEncoding = [Text.UTF8Encoding]::new($false)' \
+        '$OutputEncoding = [Console]::OutputEncoding' 'try {' "$script" \
+        'if ($null -ne $LASTEXITCODE) { exit $LASTEXITCODE }' \
+        '} catch { [Console]::Error.WriteLine($_.ToString()); exit 1 }')
+    encoded=$(printf '%s' "$payload" | iconv -f UTF-8 -t UTF-16LE | base64 | tr -d '\r\n')
+    remote="powershell.exe -NoLogo -NoProfile -NonInteractive -EncodedCommand $encoded"
+    [ "${#remote}" -le 7000 ] || fail 'Script is too long for a Windows command line; run a .ps1 file already on Windows instead.'
+    exec ssh -F "$ssh_config" "winlink-$name" "$remote"
+}
+validate_path "$config_dir"
+validate_path "$ssh_config"
+command=${1:-help}
+[ "$#" -eq 0 ] || shift
+case "$command" in
+    help|--help|-h) usage ;;
+    keygen)
+        [ "$#" -eq 0 ] || fail 'Usage: winlink keygen'
+        ensure_dirs
+        [ ! -e "$config_dir/id_ed25519" ] || fail 'Key already exists. Use winlink pubkey; do not overwrite it.'
+        exec ssh-keygen -t ed25519 -f "$config_dir/id_ed25519" -C "winlink-$(hostname)"
+        ;;
+    pubkey)
+        [ "$#" -eq 0 ] || fail 'Usage: winlink pubkey'
+        [ -f "$config_dir/id_ed25519.pub" ] || fail 'Run winlink keygen first.'
+        cat "$config_dir/id_ed25519.pub"
+        ;;
+    add)
+        [ "$#" -gt 0 ] || fail 'Usage: winlink add NAME --host IP --user USER'
+        name=$1; shift; validate_alias "$name"
+        host=''; user=''; port=22; workdir=''
+        while [ "$#" -gt 0 ]; do
+            [ "$#" -ge 2 ] || fail "Missing value for $1"
+            case "$1" in
+                --host) host=$2 ;; --user) user=$2 ;; --port) port=$2 ;; --workdir) workdir=$2 ;;
+                *) fail "Unknown option: $1" ;;
+            esac
+            shift 2
+        done
+        [[ "$host" =~ ^[a-zA-Z0-9][a-zA-Z0-9_.:-]*$ ]] || fail 'Invalid host address.'
+        [[ "$user" =~ ^[a-zA-Z0-9_][a-zA-Z0-9_.@\\-]*$ ]] || fail 'Invalid Windows user name.'
+        [[ "$port" =~ ^[0-9]{1,5}$ ]] || fail 'Invalid port.'
+        port=$((10#$port))
+        [ "$port" -ge 1 ] && [ "$port" -le 65535 ] || fail 'Port must be 1–65535.'
+        case "$workdir" in *$'\n'*|*$'\r'*) fail 'Work directory must be one line.' ;; esac
+        ensure_dirs
+        include_config
+        tmp=$(mktemp "$config_dir/hosts/.new.XXXXXX")
+        {
+            printf 'Host winlink-%s\n' "$name"
+            printf '    HostName %s\n' "$host"
+            printf '    User '; quote_ssh "$user"; printf '\n'
+            printf '    Port %s\n' "$port"
+            printf '    IdentityFile '; quote_ssh "$config_dir/id_ed25519"; printf '\n'
+            printf '    IdentitiesOnly yes\n    ServerAliveInterval 30\n    ConnectTimeout 10\n'
+        } > "$tmp"
+        mv "$tmp" "$config_dir/hosts/$name"
+        printf '%s' "$workdir" > "$config_dir/workdirs/$name"
+        printf 'Configured %s. Next: winlink doctor %s\n' "$name" "$name"
+        ;;
+    list)
+        for target in "$config_dir"/hosts/*; do
+            [ ! -f "$target" ] || basename "$target"
+        done
+        ;;
+    remove)
+        [ "$#" -eq 1 ] || fail 'Usage: winlink remove NAME'
+        require_target "$1"
+        rm -f "$config_dir/hosts/$1" "$config_dir/workdirs/$1"
+        printf 'Removed local target. Its public key remains authorized on Windows.\n'
+        ;;
+    shell)
+        [ "$#" -eq 1 ] || fail 'Usage: winlink shell NAME'
+        require_target "$1"
+        exec ssh -F "$ssh_config" "winlink-$1"
+        ;;
+    exec)
+        [ "$#" -eq 3 ] && [ "$2" = -- ] || fail "Usage: winlink exec NAME -- 'PowerShell command'"
+        run_ps "$1" "$3"
+        ;;
+    script)
+        [ "$#" -eq 2 ] || fail 'Usage: winlink script NAME FILE.ps1'
+        [ -f "$2" ] || fail "Script not found: $2"
+        run_ps "$1" "$(cat "$2")"
+        ;;
+    doctor)
+        [ "$#" -eq 1 ] || fail 'Usage: winlink doctor NAME'
+        run_ps "$1" 'Write-Output ("Computer: " + $env:COMPUTERNAME); whoami; Get-Location; $PSVersionTable.PSVersion; Get-Command git,node,python -ErrorAction SilentlyContinue | Select-Object Name,Source; exit 0'
+        ;;
+    code)
+        [ "$#" -ge 1 ] && [ "$#" -le 2 ] || fail 'Usage: winlink code NAME [C:/work/project]'
+        require_target "$1"
+        command -v code >/dev/null 2>&1 || fail 'Install VS Code, enable its code command in PATH, and install Remote - SSH.'
+        folder=${2:-$(cat "$config_dir/workdirs/$1")}
+        [ -n "$folder" ] || fail 'Pass a Windows project folder or configure --workdir.'
+        folder=${folder//\\//}
+        exec code --remote "ssh-remote+winlink-$1" "$folder"
+        ;;
+    *) usage >&2; fail "Unknown command: $command" ;;
+esac

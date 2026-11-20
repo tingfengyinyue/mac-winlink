@@ -1,0 +1,26 @@
+__pycache__/
+*.pyc
+.DS_Store
+dist/
+
+# Credentials and device-specific runtime files must stay local.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.pub
+id_rsa*
+id_ed25519*
+authorized_keys
+administrators_authorized_keys
+known_hosts*
+sshd_config*
+*.bak
+*.log
+.config/
+.ssh/
+hosts/
+workdirs/
