@@ -6,7 +6,7 @@
 
 ```bash
 python3 -m unittest discover -s tests -v
-bash -n bin/winlink install-mac.sh
+bash -n bin/winlink install-mac.sh setup.sh
 git diff --check
 ```
 

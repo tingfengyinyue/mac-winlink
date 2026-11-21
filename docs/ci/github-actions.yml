@@ -20,7 +20,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Check Bash syntax
-        run: /bin/bash -n bin/winlink install-mac.sh
+        run: /bin/bash -n bin/winlink install-mac.sh setup.sh
       - name: Run isolated client tests
         run: python3 -m unittest discover -s tests -v
       - name: Check whitespace

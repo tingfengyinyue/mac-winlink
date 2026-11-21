@@ -24,3 +24,5 @@ sshd_config*
 .ssh/
 hosts/
 workdirs/
+*.winlink.json
+*.winlink.json.new

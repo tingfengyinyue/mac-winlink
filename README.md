@@ -6,6 +6,18 @@
 
 首版针对**同一局域网或已有 VPN，且两端地址与 SSH 端口可达**。Windows 必须保持运行。客户端使用 macOS 自带的 Bash、OpenSSH 和 iconv，不需要 Python、Node 或 Homebrew；自动化测试使用 Python 3。Windows 端使用系统 OpenSSH Server 与 Windows PowerShell 5.1。
 
+## 推荐：首次连接用引导脚本
+
+为了减少首次使用时来回复制命令与诊断输出，新增配对文件引导：
+
+1. **Mac** 在项目目录运行 `bash setup.sh prepare`，生成 `office.winlink.json`。
+2. 将文件传到 Windows，下载/解压本项目，**Windows** 双击根目录 `Setup-Windows.cmd`，选中配对文件，按提示完成一次提权和授权。
+3. 将 Windows 更新后的同一个文件传回 Mac，**Mac** 运行 `bash setup.sh connect ./office.winlink.json`，自动核对指纹并验证登录。
+
+引导处理本次安装遇到的执行策略、管理员窗口、公钥路径和 Public 网络防火墙问题。配对文件包含真实设备元数据，应通过可信方式传递，已加入 Git 忽略规则。[完整三步说明、参数与验证边界](docs/QUICKSTART.md)。
+
+下面保留逐步手动配置说明，便于理解和排查。
+
 ## 先看：命令在哪台电脑执行？
 
 **所有 `winlink ...` 命令都在 Mac 终端运行。** `winlink` 是本项目安装的工具，需要先安装；它不是 macOS 自带命令，也不是 SQL。
@@ -176,10 +188,12 @@ VS Code 会打开 Windows 上的目录；Node、Python、Git、编译工具、�
 
 ```bash
 python3 -m unittest discover -s tests -v
-bash -n bin/winlink install-mac.sh
+bash -n bin/winlink install-mac.sh setup.sh
 ```
 
-客户端测试在隔离目录运行，调用真实 `/usr/bin/ssh -G` 验证配置解析；SSH 网络执行与 VS Code 启动使用替身捕获参数。本仓库另提供 [GitHub Actions CI 模板](docs/ci/README.md)，可启用 Mac 客户端测试和 Windows PowerShell 语法检查；模板默认不自动运行。**本地客户端测试不等于 Windows 脚本语法或实机安装、SSH 联通、Windows ACL、VS Code 远程会话验收；上述 Windows 项目仍待验证。**
+客户端的 23 项本地测试在隔离目录运行，调用真实 `/usr/bin/ssh -G` 验证配置解析，网络执行与 VS Code 启动使用替身捕获参数。2026-11-21 已在 Windows PowerShell 5.1 上验证脚本语法、配对预检，以及已有 SSH 环境的授权、防火墙、连接文件回写和 Mac 导入登录链路；重复执行未改变公钥文件内容。另已实测中文输出、读取远端文件和退出码传递。
+
+**已有 SSH 环境的引导测试使用 `-SkipServerInstall`，不等于全新 Windows 的组件下载、双击/UAC 交互、普通账户授权、VS Code 或桌面 UI 全部通过。**这些场景仍需分别验收。可选的 [GitHub Actions CI 模板](docs/ci/README.md) 默认不自动运行。
 
 首次实机验收按顺序执行：Windows 安装与公钥授权 → Mac `doctor` → `exec ... 'exit 7'` 后 `echo $?` 应为 7 → `exec` 输出中文并访问带空格目录 → `code` 打开项目 → 第二台 Mac 独立密钥授权 → 撤销该密钥并确认新连接被拒绝（不要用密码回退替代验证）。
 

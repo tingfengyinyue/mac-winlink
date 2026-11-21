@@ -1,5 +1,9 @@
 # 命令解释与常见问题
 
+## 第一次配置一定要反复复制终端输出吗？
+
+可以使用新的[三步引导](QUICKSTART.md)：Mac 运行 `bash setup.sh prepare` 生成配对文件，Windows 双击 `Setup-Windows.cmd` 处理安装/提权/授权/防火墙并更新文件，Mac 导回文件后运行 `bash setup.sh connect ...` 自动验证。首次仍需在 Windows 本机运行一次并接受系统授权，之后可由 Mac 远程操作。
+
 ## `winlink add office --host ...` 是 Mac 命令还是 Windows 命令？
 
 这是 **Mac 终端命令**。先安装本项目，再在 Mac 的 Terminal、iTerm 或 VS Code 本地终端运行它。Windows 上运行的是 `windows` 目录里的 PowerShell 安装和授权脚本。
