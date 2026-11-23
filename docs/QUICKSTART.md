@@ -45,6 +45,33 @@ bash setup.sh prepare
 
 它会安装当前用户的 `winlink` 命令、检查或生成本机密钥、检测 Mac 的 IPv4 地址，并生成 `office.winlink.json`。终端交互时可确认或修改检测到的 Mac 地址；有 VPN 或多网卡时，应填写 Windows 能访问、且发起 SSH 时实际使用的 Mac 来源地址。
 
+### 这个 JSON 从哪里来、在哪里？
+
+`office.winlink.json` **由上面的 Mac 命令自动生成**，不是从 GitHub 下载，也不需要自己新建或填写。默认保存在运行命令时所在的目录：按本指南操作，就是 Mac 项目根目录，与 `setup.sh` 同一层。
+
+例如 ZIP 解压在“下载”目录时，文件通常在 `~/Downloads/mac-winlink-main/office.winlink.json`；Git 克隆时通常在 `~/Downloads/mac-winlink/office.winlink.json`。终端会打印 `Pairing file: ...`，后面就是本次实际保存路径。若用了 `--name` 或 `--out`，以这个实际路径为准。
+
+仍在 Mac 项目根目录时，可以用下面两行确认文件并在 Finder 中找到它：
+
+```bash
+ls -l ./office.winlink.json
+open .
+```
+
+### 必须传文件：Mac → Windows → 原来的 Mac
+
+尚未建立 SSH，脚本**不会自动把文件发到另一台电脑**。需要你通过飞书私聊附件、U盘或公司认可的共享目录传送这个 `.json` **文件本身**，不要只复制文件名或把 JSON 内容粘贴成聊天文字。
+
+| 阶段 | 文件在哪一端、做什么 |
+| --- | --- |
+| Mac 生成 | `prepare` 生成初始 JSON，包含这台 Mac 的公钥等配对数据。 |
+| 发到 Windows | 将这个 JSON 作为文件传给 Windows，在 Windows 本机下载/复制到已解压的项目根目录，放在 `Setup-Windows.cmd` 旁边。 |
+| Windows 更新 | 双击 `Setup-Windows.cmd`，在文件选择框里选择刚收到的 JSON。成功显示 `READY` 后，同一路径的 JSON 已被补齐 Windows 连接信息，文件名通常不变。 |
+| 发回原 Mac | **从 Windows 重新上传本地已更新的 JSON 作为新附件**，或重新复制更新后的文件；不要转发第一次 Mac 发出的旧聊天附件。 |
+| Mac 导入 | 在原来生成文件的 Mac 上接收更新版，放回原项目目录替换旧 JSON，再执行第三步的 `connect`。 |
+
+每台 Mac 都要生成自己的配对文件；不要拿另一台 Mac 的 JSON 来连接。这个文件不是私钥，但包含真实设备信息，不要发到公共群或提交到 GitHub。
+
 首次生成私钥时可设置本机保护口令。已有密钥会复用，不会覆盖。配对文件只包含公钥、指纹、Mac 地址等连接数据，不含私钥或密码。
 
 也可以显式指定名称、地址和输出位置：
@@ -57,7 +84,7 @@ bash setup.sh prepare --name office --client-address 192.0.2.50 --out ./office.w
 
 ## 第二步：Windows 双击完成安装与授权
 
-将配对文件传到 Windows。先确认已按第零步解压完整项目，再在项目根目录双击（不需要进入 `windows` 子目录）：
+先按上面的文件传送说明，把 **Mac 生成的 JSON 下载/复制到 Windows 本机项目根目录**。然后在这个目录双击（不是双击 JSON，也不需要进入 `windows` 子目录）：
 
 ```text
 Setup-Windows.cmd
@@ -65,7 +92,7 @@ Setup-Windows.cmd
 
 然后：
 
-1. 在文件选择框中选中刚从 Mac 复制来的 `office.winlink.json`。
+1. 在文件选择框中选中刚在 Windows 本机保存的 `office.winlink.json`。
 2. 接受 Windows 的 UAC 提权提示，切到新打开的管理员窗口。
 3. 默认使用启动引导时的本地 Windows 用户。若该用户是管理员，会解释管理员共享公钥文件的权限范围，需输入 `YES` 才继续；也可选择已登录过的本地标准账户。
 4. 等待出现 `READY`。第一次安装 Windows OpenSSH 组件可能耗时较长，窗口会显示当前阶段。
@@ -92,11 +119,15 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\windows\Setup-Windows.
 
 ## 第三步：Mac 导入并自动验证
 
-将 Windows 上**更新后的同一个文件**传回 Mac，在 Mac 项目目录执行：
+看到 Windows 的 `READY` 后，从 Windows **重新发送本地更新后的 JSON 文件**回到原来的 Mac。不要转发第一次 Mac 发出的旧附件。
+
+在 Mac 把收到的更新版放回项目根目录，替换最初那份旧 `office.winlink.json`，然后在 Mac 项目目录执行：
 
 ```bash
 bash setup.sh connect ./office.winlink.json
 ```
+
+如果更新版另存到其他目录，或下载后文件名带有 `(1)` 等后缀，`connect` 后面必须使用**更新版的实际路径和名称**；路径有空格时加引号。不要误选仍留在项目目录里的旧文件。
 
 脚本会：
 

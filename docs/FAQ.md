@@ -12,6 +12,14 @@
 
 可以使用新的[三步引导](QUICKSTART.md)：先在两台电脑下载并解压完整项目，然后 Mac 在项目根目录运行 `bash setup.sh prepare` 生成配对文件，Windows 双击 `Setup-Windows.cmd` 处理安装/提权/授权/防火墙并更新文件，Mac 导回文件后运行 `bash setup.sh connect ...` 自动验证。首次仍需在 Windows 本机运行一次并接受系统授权，之后可由 Mac 远程操作。
 
+## `office.winlink.json` 从哪里来？需要把文件传到 Windows 吗？
+
+需要。它由 **Mac 执行 `bash setup.sh prepare` 自动生成**，默认位于执行命令时的项目根目录，不是 GitHub 提供的现成文件，不需要手动填写。终端的 `Pairing file:` 显示实际路径；在该目录运行 `open .` 可在 Finder 找到它。
+
+通过飞书私聊附件、U盘或公司认可的共享目录，把 `.json` 文件本身传到 Windows 并保存到本机，再双击 `Setup-Windows.cmd` 选择它。不是只发送文件名或粘贴 JSON 文字。
+
+Windows 显示 `READY` 后会原地更新该文件。**请从 Windows 重新发送本地更新版回到原 Mac，不要转发第一次 Mac 发来的旧附件。** Mac 用更新版替换原 JSON，或在 `connect` 中指定更新版实际路径。详细位置和步骤见[完整传送说明](QUICKSTART.md#必须传文件mac--windows--原来的-mac)。
+
 ## `winlink add office --host ...` 是 Mac 命令还是 Windows 命令？
 
 这是 **Mac 终端命令**。先安装本项目，再在 Mac 的 Terminal、iTerm 或 VS Code 本地终端运行它。Windows 上运行的是 `windows` 目录里的 PowerShell 安装和授权脚本。

@@ -46,9 +46,11 @@ Windows 已有 Git 时也可克隆同一仓库，然后在资源管理器打开�
 
 完成上面的下载和目录检查后：
 
-1. **Mac** 在项目根目录运行 `bash setup.sh prepare`，生成 `office.winlink.json`。
-2. 将文件传到已解压项目的 Windows，**Windows** 双击项目根目录 `Setup-Windows.cmd`，选中配对文件，按提示完成一次提权和授权。
-3. 将 Windows 更新后的同一个文件传回 Mac，**Mac** 运行 `bash setup.sh connect ./office.winlink.json`，自动核对指纹并验证登录。
+1. **Mac** 在项目根目录运行 `bash setup.sh prepare`，自动在当前目录生成 `office.winlink.json`，不是从 GitHub 下载或手动创建。可运行 `open .` 在 Finder 中找到它；终端的 `Pairing file:` 也会显示实际路径。
+2. 通过**飞书私聊文件附件、U盘或公司认可的共享目录**把这个 JSON 文件传到 Windows，并在 Windows 本机保存到项目根目录。双击 `Setup-Windows.cmd`，在选择框中选中刚收到的 JSON，按提示完成一次提权和授权。第一次 SSH 尚未建立，脚本不会自动传文件。
+3. Windows 显示 `READY` 后，从 Windows **重新上传/复制本地已更新的同一个 JSON**回到原 Mac，不要转发第一次 Mac 发出的旧附件。在 Mac 项目目录用更新版替换旧 JSON，再运行 `bash setup.sh connect ./office.winlink.json`，自动核对指纹并验证登录。
+
+文件名通常仍为 `office.winlink.json`，但 Windows 已补入它的地址、用户、端口和主机指纹；必须导入更新版。若另存位置或文件名不同，`connect` 应使用更新版的实际路径。每台 Mac 的配对文件互相独立，不要把私钥当成配对文件发送。详见[JSON 来源、保存位置与来回传送](docs/QUICKSTART.md#这个-json-从哪里来在哪里)。
 
 引导处理本次安装遇到的执行策略、管理员窗口、公钥路径和 Public 网络防火墙问题。配对文件包含真实设备元数据，应通过可信方式传递，已加入 Git 忽略规则。[完整三步说明、参数与验证边界](docs/QUICKSTART.md)。
 
