@@ -6,12 +6,48 @@
 
 首版针对**同一局域网或已有 VPN，且两端地址与 SSH 端口可达**。Windows 必须保持运行。客户端使用 macOS 自带的 Bash、OpenSSH 和 iconv，不需要 Python、Node 或 Homebrew；自动化测试使用 Python 3。Windows 端使用系统 OpenSSH Server 与 Windows PowerShell 5.1。
 
+## 开始前：先获取项目（Mac 和 Windows 都要做）
+
+`setup.sh` 是这个仓库里的文件，不是系统自带命令。**必须先下载整个项目、解压并进入项目根目录，再运行安装命令。** 不需要安装“GitHub 软件”，也不必注册 GitHub 账号。
+
+### 推荐：浏览器下载 ZIP，不需要 Git
+
+1. 在 Mac 和 Windows 上分别打开[项目页面](https://github.com/tingfengyinyue/mac-winlink)，点击 **Code → Download ZIP**，或直接[下载 main 分支 ZIP](https://github.com/tingfengyinyue/mac-winlink/archive/refs/heads/main.zip)。也可以将同一份完整 ZIP 通过可信方式复制到另一台电脑。
+2. **Mac**：双击 ZIP 解压。默认文件夹名是 `mac-winlink-main`；若放在“下载”目录，打开终端执行：
+
+   ```bash
+   cd "$HOME/Downloads/mac-winlink-main"
+   ls setup.sh Setup-Windows.cmd
+   ```
+
+   应看到这两个文件名。若目录不同，在终端输入 `cd `（后面有空格），把 Finder 中解压后的项目文件夹拖进终端，再按回车。
+3. **Windows**：在资源管理器中右键 ZIP → **全部解压**，打开解压后的 `mac-winlink-main` 文件夹。应能同时看到 `Setup-Windows.cmd`、`setup.sh` 和 `windows` 文件夹。不要在 ZIP 预览里直接运行脚本，也不要只复制一个脚本文件。
+
+这里能看到上述文件的文件夹就是“项目根目录”。首次引导使用根目录的 `Setup-Windows.cmd`；只有手动运行安装/授权脚本时才进入 `windows` 子目录。
+
+### 可选：已经安装 Git
+
+在 **Mac 终端**运行：
+
+```bash
+cd "$HOME/Downloads"
+git clone https://github.com/tingfengyinyue/mac-winlink.git
+cd mac-winlink
+ls setup.sh Setup-Windows.cmd
+```
+
+Git 克隆的默认目录是 `mac-winlink`，ZIP 解压的默认目录是 `mac-winlink-main`，不要混用。Mac 若提示安装命令行开发工具，可以直接选择上面的 ZIP 方式。已有 Git 仓库在原目录执行 `git pull --ff-only`；不要反复克隆到同一个目录。
+
+Windows 已有 Git 时也可克隆同一仓库，然后在资源管理器打开仓库根目录。GitHub 无法访问时，可请能访问的同事下载完整 ZIP 后通过公司可信渠道传递。
+
 ## 推荐：首次连接用引导脚本
 
 为了减少首次使用时来回复制命令与诊断输出，新增配对文件引导：
 
-1. **Mac** 在项目目录运行 `bash setup.sh prepare`，生成 `office.winlink.json`。
-2. 将文件传到 Windows，下载/解压本项目，**Windows** 双击根目录 `Setup-Windows.cmd`，选中配对文件，按提示完成一次提权和授权。
+完成上面的下载和目录检查后：
+
+1. **Mac** 在项目根目录运行 `bash setup.sh prepare`，生成 `office.winlink.json`。
+2. 将文件传到已解压项目的 Windows，**Windows** 双击项目根目录 `Setup-Windows.cmd`，选中配对文件，按提示完成一次提权和授权。
 3. 将 Windows 更新后的同一个文件传回 Mac，**Mac** 运行 `bash setup.sh connect ./office.winlink.json`，自动核对指纹并验证登录。
 
 引导处理本次安装遇到的执行策略、管理员窗口、公钥路径和 Public 网络防火墙问题。配对文件包含真实设备元数据，应通过可信方式传递，已加入 Git 忽略规则。[完整三步说明、参数与验证边界](docs/QUICKSTART.md)。
@@ -39,17 +75,6 @@ Windows：存放远端项目、执行命令与测试
 ```
 
 不熟悉参数、终端换行或公钥？见 [命令解释与常见问题](docs/FAQ.md)。连接出错时见 [故障排查](docs/TROUBLESHOOTING.md)。
-
-## 获取项目
-
-Mac 可在终端执行：
-
-```bash
-git clone https://github.com/tingfengyinyue/mac-winlink.git
-cd mac-winlink
-```
-
-Windows 可以在仓库页面选择 **Code → Download ZIP** 并解压。也可以使用 Git 克隆同一仓库，再进入 `windows` 目录。不要在尚未完成授权前尝试依靠 WinLink 安装 Windows 端。
 
 ## 一次配置后的用法
 

@@ -1,8 +1,16 @@
 # 命令解释与常见问题
 
+## 要先安装 GitHub 或 Git 吗？
+
+不必。GitHub 是托管项目的网站；推荐打开[项目页面](https://github.com/tingfengyinyue/mac-winlink)，点击 **Code → Download ZIP**，再分别在 Mac 和 Windows 解压完整项目。已经安装 Git 的用户也可克隆仓库。具体路径和目录检查见[第零步：下载项目](QUICKSTART.md#第零步下载项目并进入正确目录)。
+
+## `bash setup.sh prepare` 提示找不到文件怎么办？
+
+这通常表示尚未下载/解压项目，或终端不在项目根目录。在 Mac 先进入解压后的 `mac-winlink-main`（Git 克隆通常是 `mac-winlink`），运行 `ls setup.sh Setup-Windows.cmd` 确认两个文件都存在，再执行 `bash setup.sh prepare`。只复制文档里的命令、只下载一个脚本或在 ZIP 里直接运行都不够。
+
 ## 第一次配置一定要反复复制终端输出吗？
 
-可以使用新的[三步引导](QUICKSTART.md)：Mac 运行 `bash setup.sh prepare` 生成配对文件，Windows 双击 `Setup-Windows.cmd` 处理安装/提权/授权/防火墙并更新文件，Mac 导回文件后运行 `bash setup.sh connect ...` 自动验证。首次仍需在 Windows 本机运行一次并接受系统授权，之后可由 Mac 远程操作。
+可以使用新的[三步引导](QUICKSTART.md)：先在两台电脑下载并解压完整项目，然后 Mac 在项目根目录运行 `bash setup.sh prepare` 生成配对文件，Windows 双击 `Setup-Windows.cmd` 处理安装/提权/授权/防火墙并更新文件，Mac 导回文件后运行 `bash setup.sh connect ...` 自动验证。首次仍需在 Windows 本机运行一次并接受系统授权，之后可由 Mac 远程操作。
 
 ## `winlink add office --host ...` 是 Mac 命令还是 Windows 命令？
 

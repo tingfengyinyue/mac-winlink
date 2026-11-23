@@ -2,16 +2,42 @@
 
 这套引导用于第一次连接，解决手工切目录、执行策略、管理员权限、Public 网络防火墙、公钥位置与主机指纹核对等配置步骤。
 
-## 第一步：Mac 生成配对文件
+## 第零步：下载项目并进入正确目录
+
+`setup.sh` 是仓库文件，不能在没有项目的电脑上直接执行。**Mac 和 Windows 都需要完整的项目目录。** 不需要安装 GitHub 客户端或注册账号。
+
+推荐在浏览器打开[GitHub 项目](https://github.com/tingfengyinyue/mac-winlink)，选择 **Code → Download ZIP**，或[直接下载 ZIP](https://github.com/tingfengyinyue/mac-winlink/archive/refs/heads/main.zip)：
+
+- **Mac**：双击 ZIP 解压。如果保存在“下载”目录，在终端执行以下命令，确认能列出两个文件：
+
+  ```bash
+  cd "$HOME/Downloads/mac-winlink-main"
+  ls setup.sh Setup-Windows.cmd
+  ```
+
+  若解压目录不同，输入 `cd ` 后把 Finder 中的项目文件夹拖入终端，再按回车。
+- **Windows**：右键 ZIP → **全部解压**，打开 `mac-winlink-main` 文件夹，确认能看到 `Setup-Windows.cmd`、`setup.sh` 和 `windows` 文件夹。不要从 ZIP 预览直接运行，也不要只复制单个脚本。
+
+也可将同一份完整 ZIP 通过可信方式复制到另一台电脑后分别解压；GitHub 无法访问时可由同事下载后通过公司可信渠道提供。
+
+**已安装 Git 的可选方式**：在 Mac 终端执行：
 
 如果尚未下载项目，在 Mac 终端执行：
 
 ```bash
+cd "$HOME/Downloads"
 git clone https://github.com/tingfengyinyue/mac-winlink.git
 cd mac-winlink
+ls setup.sh Setup-Windows.cmd
 ```
 
-已有项目则进入已有目录。在 Mac 的项目目录运行：
+Git 目录通常叫 `mac-winlink`，ZIP 目录通常叫 `mac-winlink-main`。已有 Git 仓库在原目录运行 `git pull --ff-only`，不必重新克隆。Mac 提示安装命令行开发工具时，也可以直接选择 ZIP 方式。
+
+能同时看到 `setup.sh`、`Setup-Windows.cmd` 的文件夹就是后文的“项目根目录”；Windows 首次引导也在这里操作。
+
+## 第一步：Mac 生成配对文件
+
+完成第零步后，保持 Mac 终端位于项目根目录，再运行：
 
 ```bash
 bash setup.sh prepare
@@ -31,7 +57,7 @@ bash setup.sh prepare --name office --client-address 192.0.2.50 --out ./office.w
 
 ## 第二步：Windows 双击完成安装与授权
 
-将配对文件传到 Windows，并在 Windows 下载/解压本项目。在项目根目录双击：
+将配对文件传到 Windows。先确认已按第零步解压完整项目，再在项目根目录双击（不需要进入 `windows` 子目录）：
 
 ```text
 Setup-Windows.cmd
